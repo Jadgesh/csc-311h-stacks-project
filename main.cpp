@@ -4,12 +4,14 @@
 
 bool isOperator(char);
 void log(std::string);
+double calculate();
 
 bool debugging = true;
 
+Stack<double> operands;
+Stack<char> operators;
+    
 int main(){
-    Stack<double> operands;
-    Stack<char> operators;
     
     std::cout << "Equation: ";
     
@@ -29,16 +31,23 @@ int main(){
                 prevOperator = false;
                 std::cin >> input;
                 operands.push(input);
+            }else if(std::cin.peek() == ')'){
+                std::cin.ignore();
+                while(operators.top() != '('){
+                    operands.push(calculate());
+                }
+                operators.pop();
             }else{
-                prevOperator = std::cin.peek() == ')' ? false : true;
                 operators.push(std::cin.get());
             }
-        }else{
+        }else
             std::cin.ignore();
-        }
     }
     
-    std::cout << "Exited process loop";
+    while(!operators.isEmpty())
+        operands.push(calculate());
+    
+    //std::cout << "Exited process loop";
     std::cout << "Operands ";
     while(!operands.isEmpty()){
         std::cout << operands.top() << " ";
@@ -55,7 +64,6 @@ int main(){
     
     return 0;
 }
-
 
 /*
  * Takes a character and returns true if that character is one of the following + - * / ( )
@@ -91,4 +99,33 @@ bool isOperator(char c){
 void log(std::string msg){
     if(debugging)
         std::cout << msg << std::endl;
+}
+
+double calculate(){
+    double num1 = operands.top();
+    operands.pop();
+    double num2 = operands.top();
+    operands.pop();
+    
+    char oper = operators.top();
+    operators.pop();
+    
+    switch(oper){
+        case '+':
+            std::cout << num1 << " + " << num2 << "\n";
+            return num1 + num2;
+            break;
+        case '-':
+            std::cout << num1 << " - " << num2 << "\n";
+            return num1 - num2;
+            break;
+        case '*':
+            std::cout << num1 << " * " << num2 << "\n";
+            return num1 * num2;
+            break;
+        case '/':
+            std::cout << num1 << " / " << num2 << "\n";
+            return num1 / num2;
+            break;
+    }
 }
