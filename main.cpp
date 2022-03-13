@@ -17,24 +17,28 @@ int main(){
     double input;
     // Read in user input
     while(std::cin.peek() != '\n'){
+        //std::cout << "Processing Character " << std::cin.peek() << std::endl;
         if(isdigit(std::cin.peek())){
             prevOperator = false;
             std::cin >> input;
             operands.push(input);
         }else if(isOperator(std::cin.peek())){
+            // If our operator is a minus and our previous character was an operator as well
+            // this minus represents a negative number
             if(std::cin.peek() == '-' && prevOperator){
                 prevOperator = false;
                 std::cin >> input;
                 operands.push(input);
             }else{
+                prevOperator = std::cin.peek() == ')' ? false : true;
                 operators.push(std::cin.get());
-                prevOperator = true;
             }
         }else{
             std::cin.ignore();
         }
     }
     
+    std::cout << "Exited process loop";
     std::cout << "Operands ";
     while(!operands.isEmpty()){
         std::cout << operands.top() << " ";
@@ -52,6 +56,13 @@ int main(){
     return 0;
 }
 
+
+/*
+ * Takes a character and returns true if that character is one of the following + - * / ( )
+ * @params c: character to be processed
+ * @return true: character is what we're looking for
+ *         false: character is not what we're looking for
+ */
 bool isOperator(char c){
     switch(c){
         case '+':
