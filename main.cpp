@@ -1,131 +1,136 @@
 #include <iostream>
-#include <string>
-#include "stack.cpp"
+#include <stack>
+#include <limits>
 
-bool isOperator(char);
-void log(std::string);
-double calculate();
+bool isoperator(char);
+double calculate(std::stack<double>&, std::stack<char>&);
 
-bool debugging = true;
+int main (){
+    std::stack<double> operands;
+    std::stack<char> operators;
 
-Stack<double> operands;
-Stack<char> operators;
-    
-int main(){
-    
-    std::cout << "Equation: ";
-    
-    bool prevOperator = true;
-    double input;
-    // Read in user input
-    while(std::cin.peek() != '\n'){
-        //std::cout << "Processing Character " << std::cin.peek() << std::endl;
-        if(isdigit(std::cin.peek())){
-            prevOperator = false;
-            std::cin >> input;
-            operands.push(input);
-        }else if(isOperator(std::cin.peek())){
-            // If our operator is a minus and our previous character was an operator as well
-            // this minus represents a negative number
-            if(std::cin.peek() == '-' && prevOperator){
-                prevOperator = false;
-                std::cin >> input;
-                operands.push(input);
-            }else if(std::cin.peek() == ')'){
-                std::cin.ignore();
-                while(operators.top() != '('){
-                    operands.push(calculate());
+    double numIN;
+    //char currentChar;
+
+    bool keepLooping = true;
+    do{
+        std::cout << "Equation: ";
+        bool previousIsDigit = false;
+
+        while(std::cin.peek() != '\n'){
+
+            //currentChar = std::cin.get();
+
+            //std::cout << "[DEBUG] Current character is '" << (char)std::cin.peek() << "'.\n";
+
+            // Check if our current character is the start of a positive number or if
+            // the minus symbol indicates a negative number
+            if(isdigit(std::cin.peek()) || (std::cin.peek() == '-' && !previousIsDigit)){
+                std::cin >> numIN;
+
+                if(!operators.empty() && operators.top() == '-'){
+                    numIN *= -1; // Apply the negative to the number
+                    operators.pop(); // Remove subtraction
+                    operators.push('+'); // Make it addition
                 }
-                operators.pop();
-            }else{
-                operators.push(std::cin.get());
+
+                //std::cout << "[DEBUG] Detected Number: " << numIN << " pushing to operands stack.\n";
+                operands.push(numIN);
+
+                // Check if our operators stack contains a * or / ontop
+                // If it does, we need to perform that operation immediately
+                if(!operators.empty() && (operators.top() == '*' || operators.top() == '/')){
+                    //std::cout << "[DEBUG] Top of operators stack has a '" << operators.top() << "', performing calculation.\n";
+                    operands.push(calculate(operands, operators));
+                }
+
+                previousIsDigit = true; // Update our boolean flag to represent our current is a digit
             }
-        }else
-            std::cin.ignore();
-    }
-    
-    while(!operators.isEmpty())
-        operands.push(calculate());
-    
-    //std::cout << "Exited process loop";
-    std::cout << "Operands ";
-    while(!operands.isEmpty()){
-        std::cout << operands.top() << " ";
-        operands.pop();
-    }
-    
-    std::cout << "\nOperators ";
-    while(!operators.isEmpty()){
-        std::cout << operators.top() << " ";
-        operators.pop();
-    }
-    
-    std::cout << "\n";
-    
+            else if(isoperator(std::cin.peek())){
+                if(std::cin.peek() == ')'){
+                    std::cin.ignore();
+                    // If we encounter a ), perform calculations until
+                    // we encounter it's pairing ( from the operator stack
+                    while(operators.top() != '('){
+                        //std::cout << "[DEBUG] Encountered ), performing calculations until we encounter (\n";
+                        operands.push(calculate(operands, operators));
+                    }
+
+                    operators.pop(); // Remove the (
+
+                    if(!operators.empty() && (operators.top() == '*' || operators.top() == '/')){
+                        //std::cout << "[DEBUG] Top of operators stack has a '" << operators.top() << "', performing calculation.\n";
+                        operands.push(calculate(operands, operators));
+                    }
+
+                    previousIsDigit = true;
+                }else{
+                    if(std::cin.peek() == '(' && previousIsDigit){
+                        operators.push('*');
+                        //std::cout << "[DEBUG] Adding * to operators stack.\n";
+                    }
+                    //std::cout << "[DEBUG] Adding " << (char)std::cin.peek() << " to operators stack.\n";
+                    operators.push(std::cin.get());
+                    previousIsDigit = false;
+                }
+            }else{
+                //std::cout << "[DEBUG] Ignoring current character.\n";
+                std::cin.ignore();
+            }
+        }
+
+        // Constantly calculate until we have no operators left in our operators stack
+        while(!operators.empty()){
+            //std::cout << "[DEBUG] Performing calculations\n";
+            operands.push(calculate(operands, operators));
+        }
+
+        std::cout << "Answer: " << operands.top() << "\n";
+        operands.pop(); // Remove the answer to allow solving another equation
+        std::cin.ignore(); // Clear the '\n' character from the input stream
+
+        std::cout << "Would you like to enter another equation? [Y/N] ";
+        if(std::cin.peek() != 'Y'){
+            if(std::cin.peek() != 'N')
+                std::cout << "Assuming you want to quit. ";
+            std::cout << "Good Bye.\n";
+            keepLooping = false;
+        }
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Clears input stream
+    }while(keepLooping);
     return 0;
 }
 
-/*
- * Takes a character and returns true if that character is one of the following + - * / ( )
- * @params c: character to be processed
- * @return true: character is what we're looking for
- *         false: character is not what we're looking for
- */
-bool isOperator(char c){
-    switch(c){
-        case '+':
-            return true;
-            break;
-        case '-':
-            return true;
-            break;
-        case '*':
-            return true;
-            break;
-        case '/':
-            return true;
-            break;
-        case '(':
-            return true;
-            break;
-        case ')':
-            return true;
-            break;
-        default:
-            return false;
-    }
+bool isoperator(char c){
+    if(c == '*' || c == '/' || c == '-' || c == '+' || c == '(' || c == ')')
+        return true;
+    return false;
 }
 
-void log(std::string msg){
-    if(debugging)
-        std::cout << msg << std::endl;
-}
-
-double calculate(){
+double calculate(std::stack<double>& operands, std::stack<char>& operators){
     double num1 = operands.top();
-    operands.pop();
+    operands.pop(); 
     double num2 = operands.top();
     operands.pop();
-    
-    char oper = operators.top();
+
+    char operation = operators.top();
     operators.pop();
-    
-    switch(oper){
+
+    double result = .0;
+
+    switch(operation){
         case '+':
-            std::cout << num1 << " + " << num2 << "\n";
-            return num1 + num2;
+            result = num2 + num1;
             break;
         case '-':
-            std::cout << num1 << " - " << num2 << "\n";
-            return num1 - num2;
+            result = num2 - num1;
             break;
         case '*':
-            std::cout << num1 << " * " << num2 << "\n";
-            return num1 * num2;
+            result = num2 * num1;
             break;
         case '/':
-            std::cout << num1 << " / " << num2 << "\n";
-            return num1 / num2;
+            result = num2 / num1;
             break;
     }
+    return result;
 }
